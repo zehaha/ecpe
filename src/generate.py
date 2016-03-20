@@ -66,7 +66,11 @@ def produce_max(config_vector, trigger_matrix):
 	return max_matrix
 
 max_arr = produce_max(config_vector, trigger_matrix)
+
+# max_arr = [1,1,2,0]
+# col = len(max_arr)
 max_app = max(max_arr)
+# print max_app
 ker_length = 1
 elem_length = [0]*col
 
@@ -90,21 +94,36 @@ apps_np = np.array(blank_app, dtype=np.integer)
 result_vector_np = np.empty(ker_length * len(blank_app)).astype(np.integer)
 max_arr_np = np.array(max_arr, dtype=np.integer)
 elem_length_np = np.array(elem_length, dtype=np.integer)
+print max_arr
+print elem_length_np
+# print ker_length
 
 kernel = """
 
-		__kernel void validate(__global int* result_vector, __global int* max_arr, __global int* elem_length){
+		__kernel void validate(__global int* result_vector, __global int* elem_length, __global int* max_arr){
 
 		int g_id = get_group_id(0);
 		int l_id = get_local_id(0);
 		int incr = elem_length[g_id] / (max_arr[g_id] + 1);
+		int grpsize = get_global_size(0);
+		int lclsize = get_local_size(0);
 
 		if (l_id <= max_arr[g_id]) {
-			for(int i = 0; i < incr; i ++) {
-				result_vector[g_id * KER_LENGTH + ]
+			for(int i = 0; i < KER_LENGTH; i += elem_length[g_id]) {
+				for(int j = 0; j < incr; j++) {
+					result_vector[g_id * KER_LENGTH + (incr * l_id) + i + j] = l_id;
+				}
 			}
 		}
-		
+
+		/*if(g_id == 0) {
+			result_vector[0] = elem_length[0];
+			result_vector[1] = elem_length[1];
+			result_vector[2] = elem_length[2];
+			result_vector[3] = (max_arr[0] + 1);
+			result_vector[4] = (max_arr[1] + 1);
+			result_vector[5] = (max_arr[2] + 1);
+		}*/
 	} 
 	"""
 
@@ -119,12 +138,14 @@ queue = cl.CommandQueue(context)
 # create memory buffers
 mf = cl.mem_flags
 result_vector_buf = cl.Buffer(context, mf.WRITE_ONLY, result_vector_np.nbytes)
-max_arr_buf = cl.Buffer(context, mf.READ_ONLY, max_arr_np.nbytes)
-elem_length_buf = cl.Buffer(context, mf.READ_ONLY, elem_length_np.nbytes)
+max_arr_buf = cl.Buffer(context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = max_arr_np)
+elem_length_buf = cl.Buffer(context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = elem_length_np)
 
 # execute the kernel
-program.validate(queue, ((max_app+1)*col, ), (max_app+1, ), result_vector_buf, max_arr_buf, elem_length_buf)
+complete_events = program.validate(queue, ((max_app+1)*col, ), (max_app+1, ), result_vector_buf, elem_length_buf, max_arr_buf)
+events = [complete_events]
 
-cl.enqueue_copy(queue, result_vector_np, result_vector_buf)
+# copy back to host
+cl.enqueue_copy(queue, result_vector_np, result_vector_buf, wait_for=events)
 
 print result_vector_np
