@@ -130,7 +130,8 @@ def validate(result_matrix, indices, config_vector, candapps, n):
 
 	kernel = """
 
-		__kernel void validate(__global int* result_vector, __global int* result_matrix, __global int* candapps, __global int* config_vector, __global int* indices){
+		__kernel void validate(__global int* result_vector, __global int* result_matrix, __global int* candapps, 
+			__global int* config_vector, __global int* indices){
 
 		int valid = 1;
 		int temp_result_matrix[MAT_SIZE];

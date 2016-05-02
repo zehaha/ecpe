@@ -67,10 +67,7 @@ def produce_max(config_vector, trigger_matrix):
 
 max_arr = produce_max(config_vector, trigger_matrix)
 
-# max_arr = [1,1,2,0]
-# col = len(max_arr)
 max_app = max(max_arr)
-# print max_app
 ker_length = 1
 elem_length = [0]*col
 
@@ -102,11 +99,8 @@ kernel = """
 
 		__kernel void validate(__global int* result_vector, __global int* elem_length, __global int* max_arr){
 
-		int g_id = get_group_id(0);
-		int l_id = get_local_id(0);
+		int g_id = get_group_id(0), l_id = get_local_id(0);
 		int incr = elem_length[g_id] / (max_arr[g_id] + 1);
-		int grpsize = get_global_size(0);
-		int lclsize = get_local_size(0);
 
 		if (l_id <= max_arr[g_id]) {
 			for(int i = 0; i < KER_LENGTH; i += elem_length[g_id]) {
@@ -116,14 +110,6 @@ kernel = """
 			}
 		}
 
-		/*if(g_id == 0) {
-			result_vector[0] = elem_length[0];
-			result_vector[1] = elem_length[1];
-			result_vector[2] = elem_length[2];
-			result_vector[3] = (max_arr[0] + 1);
-			result_vector[4] = (max_arr[1] + 1);
-			result_vector[5] = (max_arr[2] + 1);
-		}*/
 	} 
 	"""
 
