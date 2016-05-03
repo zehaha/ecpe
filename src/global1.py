@@ -5,7 +5,7 @@ import pyopencl as cl
 from pyopencl import array
 import sys
 
-f = open('../inputs/input.txt', 'r')
+f = open('../inputs/1.txt', 'r')
 temp = f.readline().split()
 row = int(temp[0])
 col = int(temp[1])
@@ -86,7 +86,7 @@ trans_matrix_ind = [i for j in trans_matrix_ind for i in j]
 trans_matrix_con = [i for j in trans_matrix_con for i in j]
 
 # print trigger_matrix, trigger_matrix_ind, trigger_matrix_con
-print trans_matrix, trans_matrix_ind, trans_matrix_con
+# print trans_matrix, trans_matrix_ind, trans_matrix_con
 
 f.readline()
 
@@ -187,7 +187,7 @@ def produce_max(config_vector):
 
 	return list(max_np)
 
-max_arr = produce_max(config_vector)
+# max_arr = produce_max(config_vector)
 # print max_arr
 
 # generate candidate application vectors 
@@ -285,7 +285,7 @@ def generate_cand_apps(max_arr):
 	return result_vector
 
 
-cand_apps = generate_cand_apps(max_arr)
+# cand_apps = generate_cand_apps(max_arr)
 
 # get generated candidate application vectors from the result for generate_cand_apps
 def get_cand_apps(cand_apps):
@@ -298,10 +298,10 @@ def get_cand_apps(cand_apps):
 
 	return cand_apps_arr
 
-cand_apps = get_cand_apps(cand_apps)
+# cand_apps = get_cand_apps(cand_apps)
 # print cand_apps
 # print trigger_matrix_con, trigger_matrix_ind
-numapps = [len(cand_apps)]
+# numapps = [len(cand_apps)]
 
 # validate the generated application vectors
 def validate_apps(config_vectors_set, candapps, numapps):
@@ -371,9 +371,7 @@ def validate_apps(config_vectors_set, candapps, numapps):
 							end = j;
 							break;
 						}
-						if(j == (LEN - 1)) {
-							end = LEN;
-						}
+						if(j == (LEN - 1)) end = LEN;
 						if(with_start == 0 && trigger_matrix_ind[j] >= prev) {
 							start = j;
 							with_start = 1;
@@ -393,58 +391,53 @@ def validate_apps(config_vectors_set, candapps, numapps):
 				// Check for additional required conditions per rule
 				if(valid == 1) {
 					valid = 0;
-					int validity_set[COL_SIZE];
-					for(int i = 0; i < COL_SIZE; i ++) validity_set[i] = 0;
-					int truth_count = 0;
-
-					int i = 0;
-					while(i < COL_SIZE) {
-						int j = 0;
-						while(j < INDICES_LENGTH) {
-							int index = -1;
-							for(int l = 0; l < LEN; l++) {
-								if(trigger_matrix_ind[l] == (i + COL_SIZE * indices[j])) {
+					int validity_set[COL_SIZE], sum = 0, occur[COL_SIZE];
+					for(int i = 0; i < COL_SIZE; i ++){
+						validity_set[i] = 0;
+						occur[i] = 0;
+					}
+					for(int i = 0; i < COL_SIZE; i ++) {
+						for(int j = 0; j < INDICES_LENGTH; j ++) {
+							int k = (i + COL_SIZE * indices[j]), index = -1;
+							for(int l = 0; l < LEN; l ++) {
+								if(trigger_matrix_ind[l] == k && temp_result_matrix[l] != 0) {
 									index = l;
+									occur[i] = 1;
 									break;
 								}
 							}
 							if(index >= 0) {
 								limit = ((int)(trigger_matrix_ind[index] / COL_SIZE) + 1) * COL_SIZE;
-								prev = limit - COL_SIZE, start = 0, end = 0;
-								with_start = 0;
+								prev = limit - COL_SIZE, start = 0, end = 0, with_start = 0;
 								for(int m = 0; m < LEN; m ++) {
 									if(!(trigger_matrix_ind[m] >= prev || trigger_matrix_ind[m] < limit)) continue;
 									if(trigger_matrix_ind[m] > limit) {
 										end = m;
 										break;
 									}
-									if(m == (LEN - 1)) {
-										end = LEN;
-									}
+									if(m == (LEN - 1)) end = LEN;
 									if(with_start == 0 && trigger_matrix_ind[m] >= prev) {
 										start = m;
 										with_start = 1;
 									}
 								}
-								int sum = 0;
-								for(int n = start; n < end; n ++) {
-									sum += temp_result_matrix[n];
-								}
-								if((sum + 1) > config[indices[j]]) {
-									validity_set[i] = 1;
-									truth_count += 1;
-									break;
+								if((end - start) != 0) {
+									int sum = 0;
+									for(int n = start; n < end; n ++) sum += temp_result_matrix[n];
+									if((sum + 1) > config[indices[j]]) {
+										validity_set[i] = 1;
+										break;
+									}
 								}
 							}
-							j ++;
 						}
-						i ++;
 					}
-					int sum_set = 0;
-					for(int o = 0; o < COL_SIZE; o ++) sum_set += validity_set[o];
-					if(sum_set == truth_count && sum_set != 0) valid = 1;
+					int equal = 0;
+					for(int o = 0; o < COL_SIZE; o ++) {
+						if(occur[o] == validity_set[o]) equal ++;
+					}
+					if(equal == COL_SIZE) valid = 1;
 				}
-
 				if(valid == 1) result_vector[(int)(first_index / COL_SIZE) + localid] = 1;
 			}
 		} 
@@ -475,7 +468,7 @@ def validate_apps(config_vectors_set, candapps, numapps):
 
 	return result_vector_np
 
-valid_apps_bool = list(validate_apps(config_vectors_set, cand_apps, numapps))
+# valid_apps_bool = list(validate_apps(config_vectors_set, cand_apps, numapps))
 # print valid_apps_bool
 
 # filter application vectors and configuration vectors based on the result of validate_apps
@@ -483,7 +476,8 @@ def filter_apps(config_vectors_set, valid_apps_bool, cand_apps, numapps):
 	temp_index_set = set([])
 	valid_apps_set = []
 	numvalidapps = []
-
+	# print valid_apps_bool
+	# print cand_apps
 	for i in range(len(valid_apps_bool)):
 		if valid_apps_bool[i] != 0 :
 			index = 0
@@ -496,7 +490,7 @@ def filter_apps(config_vectors_set, valid_apps_bool, cand_apps, numapps):
 
 			valid_apps_set.append(cand_apps[i])
 			temp_index_set.add(index)
-
+	# print temp_index_set
 	num_valid_apps = []
 	end_index = 0
 	start_index = 0
@@ -511,7 +505,7 @@ def filter_apps(config_vectors_set, valid_apps_bool, cand_apps, numapps):
 
 	return valid_apps_set, temp_config_vectors_set, num_valid_apps
 
-valid_apps, config_vectors_set, num_valid_apps = filter_apps(config_vectors_set, valid_apps_bool, cand_apps, numapps)
+# valid_apps, config_vectors_set, num_valid_apps = filter_apps(config_vectors_set, valid_apps_bool, cand_apps, numapps)
 # print valid_apps, config_vectors_set, num_valid_apps
 
 # perform the computation: config_vector = config_vector + app_vector * transition matrix
@@ -546,7 +540,7 @@ def compute(config_vectors_set, validapps, num_valid_apps):
 	if device.get_info(cl.device_info.MAX_WORK_GROUP_SIZE) < num_config_vecs:
 		print 'invalid number of work-groups!'
 		return -1
-	if device.get_info(cl.device_info.MAX_WORK_ITEM_SIZES)[0] < max_valid_apps*row:
+	if device.get_info(cl.device_info.MAX_WORK_ITEM_SIZES)[0] < max_valid_apps*num_config_vecs:
 		print 'invalid number of work-items!'
 		return -1
 
@@ -555,7 +549,7 @@ def compute(config_vectors_set, validapps, num_valid_apps):
 		__kernel void compute(__global int* trans_matrix_con, __global int* trans_matrix_ind, __global int* config_vector, __global int* validapps, __global int* numvalidapps,
 			__global int* result_config_vectors){
 
-		int grpid = get_group_id(0), localid = get_local_id(0), sum = 0, first_index = 0;
+		int grpid = get_group_id(0), localid = get_local_id(0), sum, first_index = 0;
 		__local int config[ROW];
 
 		if(localid == 0) {
@@ -569,16 +563,16 @@ def compute(config_vectors_set, validapps, num_valid_apps):
 			first_index *= COL;
 		}
 
-		if(numvalidapps[grpid] > (int) (localid / ROW)) {
-			for(int i = 0; i < COL; i ++) {
-				for(int j = 0; j < LEN; j ++) {
-					if((localid % ROW) + (ROW * i) == trans_matrix_ind[j]) {
-						sum += trans_matrix_con[j] * validapps[first_index + ((int)(localid / ROW) * COL) + (int)(trans_matrix_ind[j] / ROW)];
-						break;
+		if(numvalidapps[grpid] > localid){
+			for(int i = 0; i < ROW; i ++) {
+				sum = 0;
+				for(int j = 0; j < COL; j ++) {
+					for(int k = 0; k < LEN; k ++) {
+						if((i + ROW * j) == trans_matrix_ind[k]) sum += trans_matrix_con[k] * validapps[first_index + (localid * COL) + (int)(trans_matrix_ind[k] / ROW)];
 					}
 				}
+				result_config_vectors[(first_index * ROW / COL) + (localid * ROW) + i] = sum + config[i];
 			}
-			result_config_vectors[(int) (first_index * ROW / COL) + localid] = config[((int) (localid % ROW))] + sum;
 		}
 
 	} 
@@ -604,13 +598,12 @@ def compute(config_vectors_set, validapps, num_valid_apps):
 	# execute the kernel
 	# 1 work-group = 1 configuration vector = (max num. of valid apps * row) work items
 	# 1 work-item = 1 column of transition matrix
-
-	program.compute(queue, (max_valid_apps*row*num_config_vecs, ), (max_valid_apps*row, ), trans_matrix_con_buf, trans_matrix_ind_buf, config_vector_buf, validapps_buf, num_valid_apps_buf, result_config_vectors_buf)
+	program.compute(queue, (max_valid_apps*num_config_vecs, ), (max_valid_apps, ), trans_matrix_con_buf, trans_matrix_ind_buf, config_vector_buf, validapps_buf, num_valid_apps_buf, result_config_vectors_buf)
 	cl.enqueue_copy(queue, result_config_vectors_np, result_config_vectors_buf)
 
 	return list(result_config_vectors_np)
 
-config_vectors = compute(config_vectors_set, valid_apps, num_valid_apps)
+# config_vectors = compute(config_vectors_set, valid_apps, num_valid_apps)
 
 # divides the result of compute into separate arrays
 def get_config_vectors(config_vectors):
@@ -623,46 +616,50 @@ def get_config_vectors(config_vectors):
 
 	return temp_config_vectors_set
 
-print get_config_vectors(config_vectors)
-
+# print get_config_vectors(config_vectors)
+# 
 time = 0
 
-# while time != 4:
-# 	tempstr =  'Time ' + str(time) + ':'
-# 	print tempstr
-# 	temp_config_set = []
-# 	numapps = []
-# 	cand_apps = []
-# 	candapps = []
-# 	print 'Config vectors: ' + str(config_vectors_set)
-# 	temp_config_vectors = []
-# 	for config in config_vectors_set :
-# 		max_rules = produce_max(config, trigger_matrix)
-# 		if max_rules == -1 or sum(max_rules) == 0: 
-# 			continue
-# 		else:
-# 			candapps = (get_cand_apps(generate_cand_apps(max_rules)))
-# 			numapps.append(len(candapps))
-# 			cand_apps += candapps
-# 			temp_config_vectors.append(config)
+while time != 2:
+	tempstr =  'Time ' + str(time) + ':'
+	print tempstr
+	temp_config_set = []
+	numapps = []
+	cand_apps = []
+	candapps = []
+	print 'Config vectors: ' + str(config_vectors_set)
+	temp_config_vectors = []
+	for config in config_vectors_set :
+		max_rules = produce_max(config)
+		# print max_rules
+		if max_rules == -1 or sum(max_rules) == 0: 
+			continue
+		else:
+			candapps = (get_cand_apps(generate_cand_apps(max_rules)))
+			numapps.append(len(candapps))
+			cand_apps += candapps
+			# print cand_apps
+			temp_config_vectors.append(config)
 
-# 	config_vectors_set = temp_config_vectors
-# 	if len(config_vectors_set) == 0: break
-# 	valid_apps_bool = validate_apps(config_vectors_set, cand_apps, numapps)
-# 	if type(valid_apps_bool) == int: break
-# 	valid_apps, config_vectors_set, numapps = filter_apps(config_vectors_set, valid_apps_bool, cand_apps, numapps)
-# 	print 'Valid app vectors: ' + str(valid_apps)
-# 	config_vectors = compute(config_vectors_set, valid_apps, numapps)
-# 	if config_vectors == -1: break
-# 	temp_res_config = get_config_vectors(config_vectors)
-# 	computed_vectors = []
-# 	for config in temp_res_config:
-# 		if config not in config_vectors_set:
-# 			computed_vectors.append(config)
-# 	temp_config_set += computed_vectors
-# 	config_vectors_set = [vect for vect in temp_config_set]
-# 	print 'Result: ' + str(config_vectors_set) + '\n'
+	config_vectors_set = temp_config_vectors
+	if len(config_vectors_set) == 0: break
+	valid_apps_bool = validate_apps(config_vectors_set, cand_apps, numapps)
+	# print valid_apps_bool, numapps
+	if type(valid_apps_bool) == int: break
+	valid_apps, config_vectors_set, numapps = filter_apps(config_vectors_set, valid_apps_bool, cand_apps, numapps)
+	# print numapps
+	print 'Valid app vectors: ' + str(valid_apps)
+	config_vectors = compute(config_vectors_set, valid_apps, numapps)
+	if config_vectors == -1: break
+	temp_res_config = get_config_vectors(config_vectors)
+	computed_vectors = []
+	for config in temp_res_config:
+		if config not in config_vectors_set:
+			computed_vectors.append(config)
+	temp_config_set += computed_vectors
+	config_vectors_set = [vect for vect in temp_config_set]
+	print 'Result: ' + str(config_vectors_set) + '\n'
 
-# 	time += 1
-# 	# tempstr += ''
-# 	if len(config_vectors_set) == 0 : break # all are in non-halting or all are in halting state
+	time += 1
+	# tempstr += ''
+	if len(config_vectors_set) == 0 : break # all are in non-halting or all are in halting state
